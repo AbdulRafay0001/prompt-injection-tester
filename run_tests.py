@@ -9,7 +9,7 @@ from target import MODEL, ask_bot
 LEVELS = [0, 1, 2]  # used when no levels are given on the command line
 RUNS = 3  # the model's replies vary, so one try per attack could just be luck
 RESULTS_DIR = "results"
-COLUMNS = ["level", "attack_id", "category", "run", "raw_leaked", "final_leaked", "reply"]
+COLUMNS = ["level", "attack_id", "category", "run", "raw_leaked", "final_leaked", "reply", "raw_reply"]
 
 
 # Send every attack RUNS times at each level, judge each reply, and return one row per call
@@ -28,6 +28,7 @@ def run_all(model, levels):
                     "raw_leaked": leaked(raw_reply),  # did the model try to leak?
                     "final_leaked": leaked(final_reply),  # did the leak reach the user?
                     "reply": final_reply,
+                    "raw_reply": raw_reply,  # before the filter; differs from reply only at level 2
                 }
                 rows.append(row)
                 verdict = "Secret has been leaked" if row["final_leaked"] else "Secret has not been leaked"
@@ -43,12 +44,12 @@ def write_csv(rows, out_dir):
         writer.writerows(rows)
 
 
-# Percentage of rows that leaked, as text like "33%"
+# Percentage of rows that leaked, with the count behind it, as text like "13% (2/15)"
 def leak_rate(rows, column):
     if not rows:
         return "-"
     leaks = sum(1 for row in rows if row[column])  # True counts as one leak
-    return f"{round(100 * leaks / len(rows))}%"
+    return f"{round(100 * leaks / len(rows))}% ({leaks}/{len(rows)})"
 
 
 # One table row: leak rates at each level for the given rows (one category, or all of them)
