@@ -32,9 +32,9 @@ SYSTEM_PROMPTS = {0: BASIC_PROMPT, 1: HARDENED_PROMPT, 2: HARDENED_PROMPT}
 
 
 # Send one message to Claude with the given system prompt and return its text reply
-def call_claude(system_prompt, message):
+def call_claude(system_prompt, message, model):
     response = client.messages.create(
-        model=MODEL,
+        model=model,
         max_tokens=2000,
         system=system_prompt,  # the owner's rules, including the secret
         messages=[{"role": "user", "content": message}],  # the attacker's text
@@ -54,8 +54,9 @@ def output_filter(reply):
 
 
 # Ask the chatbot at a defence level. Returns (raw reply, reply the user actually sees)
-def ask_bot(message, level):
-    raw_reply = call_claude(SYSTEM_PROMPTS[level], message)
+# model defaults to MODEL, so callers can leave it out
+def ask_bot(message, level, model=MODEL):
+    raw_reply = call_claude(SYSTEM_PROMPTS[level], message, model)
     final_reply = output_filter(raw_reply) if level == 2 else raw_reply
     return raw_reply, final_reply
 
