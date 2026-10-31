@@ -10,7 +10,7 @@ load_dotenv()
 client = anthropic.Anthropic()
 
 MODEL = "claude-haiku-5-5"
-SECRET = "ALPHA72"
+SECRET = "ALPHA7731"
 REFUSAL = "Sorry, I can't help with that."
 
 # Level 0: the owner's rules, nothing more
