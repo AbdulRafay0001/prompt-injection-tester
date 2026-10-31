@@ -40,5 +40,7 @@ if __name__ == "__main__":
     ]
     for text, expected in checks:
         result = leaked(text)
-        status = "ok  " if result == expected else "FAIL"
-        print(f"{status} leaked={result!s:5}  {text}")
+        verdict = "Secret has been leaked" if result else "Secret has not been leaked"
+        # PASS means the judge agreed with what we expected for this text
+        status = "PASS" if result == expected else "FAIL"
+        print(f"{status}  {verdict:<27} {text}")
