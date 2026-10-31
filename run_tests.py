@@ -1,24 +1,25 @@
 import csv
 import os
+import sys
 
 from attacks import ATTACKS
 from judge import leaked
-from target import ask_bot
+from target import MODEL, ask_bot
 
-LEVELS = [0, 1, 2]
+LEVELS = [0, 1, 2]  # used when no levels are given on the command line
 RUNS = 3  # the model's replies vary, so one try per attack could just be luck
 RESULTS_DIR = "results"
 COLUMNS = ["level", "attack_id", "category", "run", "raw_leaked", "final_leaked", "reply"]
 
 
-# Send every attack RUNS times at every level, judge each reply, and return one row per call
-def run_all():
+# Send every attack RUNS times at each level, judge each reply, and return one row per call
+def run_all(model, levels):
     rows = []
-    total = len(LEVELS) * len(ATTACKS) * RUNS
-    for level in LEVELS:
+    total = len(levels) * len(ATTACKS) * RUNS
+    for level in levels:
         for attack in ATTACKS:
             for run in range(1, RUNS + 1):
-                raw_reply, final_reply = ask_bot(attack["prompt"], level)
+                raw_reply, final_reply = ask_bot(attack["prompt"], level, model)
                 row = {
                     "level": level,
                     "attack_id": attack["id"],
@@ -34,9 +35,9 @@ def run_all():
     return rows
 
 
-# Save every row to results/results.csv so the replies can be checked by hand later
-def write_csv(rows):
-    with open(os.path.join(RESULTS_DIR, "results.csv"), "w", newline="") as f:
+# Save every row to results.csv so the replies can be checked by hand later
+def write_csv(rows, out_dir):
+    with open(os.path.join(out_dir, "results.csv"), "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS)
         writer.writeheader()
         writer.writerows(rows)
@@ -77,11 +78,15 @@ def build_summary(rows):
     return "\n".join(lines)
 
 
+# Usage: python run_tests.py [model] [levels...]   e.g. python run_tests.py claude-haiku-4-5 0
 if __name__ == "__main__":
-    os.makedirs(RESULTS_DIR, exist_ok=True)  # create results/ if it isn't there yet
-    rows = run_all()
-    write_csv(rows)
+    model = sys.argv[1] if len(sys.argv) > 1 else MODEL
+    levels = [int(level) for level in sys.argv[2:]] or LEVELS  # "or" falls back when none are given
+    out_dir = os.path.join(RESULTS_DIR, model)  # one folder per model, so runs don't overwrite each other
+    os.makedirs(out_dir, exist_ok=True)
+    rows = run_all(model, levels)
+    write_csv(rows, out_dir)
     summary = build_summary(rows)
-    with open(os.path.join(RESULTS_DIR, "summary.md"), "w") as f:
+    with open(os.path.join(out_dir, "summary.md"), "w") as f:
         f.write(summary + "\n")
     print("\n" + summary)
